@@ -1,0 +1,3 @@
+[submodule ".github/workflows"]
+	path = .github/workflows
+	url = git@gist.github.com:847e2f5887b1963b6878e23d61bbdb98.git
