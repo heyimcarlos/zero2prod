@@ -1,4 +1,3 @@
-
 use zero2prod::run;
 
 // Procedural macro which initializes an async runtime that block on (drives) HttpServer::run
