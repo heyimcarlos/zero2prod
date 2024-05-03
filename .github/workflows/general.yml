@@ -38,7 +38,7 @@ jobs:
         run: 
           cargo install sqlx-cli
           --version=${{ env.SQLX_VERSION }}
-          --features= ${{ env.SQLX_FEATURES }}
+          --features=${{ env.SQLX_FEATURES }}
           --no-default-features
           --locked
             # The --locked flag can be used to force Cargo to use the packaged Cargo.lock file if it is available. 
@@ -89,7 +89,7 @@ jobs:
         run: 
           cargo install sqlx-cli
           --version=${{ env.SQLX_VERSION }}
-          --features= ${{ env.SQLX_FEATURES }}
+          --features=${{ env.SQLX_FEATURES }}
           --no-default-features
           --locked
       - name: Install postgresql-client
@@ -123,7 +123,7 @@ jobs:
         run: 
           cargo install sqlx-cli
           --version=${{ env.SQLX_VERSION }}
-          --features= ${{ env.SQLX_FEATURES }}
+          --features=${{ env.SQLX_FEATURES }}
           --no-default-features
           --locked
       - name: Migrate database
