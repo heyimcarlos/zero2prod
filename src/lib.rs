@@ -12,4 +12,5 @@ struct FormData {
 async fn subscribe(web::Form(_form): web::Form<FormData>) -> HttpResponse {
     HttpResponse::Ok().finish()
 }
+pub mod routes;
 pub mod startup;
