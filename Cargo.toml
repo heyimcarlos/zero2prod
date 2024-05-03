@@ -40,3 +40,8 @@ features = [
 # Only used for testing or examples, not included in the final binary
 [dev-dependencies]
 reqwest = "0.12.4"
+
+[patch.crates-io]
+# Patching config crate because 0.14.0 release uses yaml-rust which is unmaintained.
+# Patching with master can be dangerous, if it breaks, use -> rev = "e3c1d0b452639478662a44f15ef6d5b6d969bf9b"
+config = { git = "https://github.com/mehcode/config-rs", branch = "master" }
