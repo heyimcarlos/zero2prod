@@ -6,5 +6,5 @@ async fn main() -> Result<(), std::io::Error> {
         std::net::TcpListener::bind(("127.0.0.1", 8000)).expect("Failed to bind pot 8000.");
     // Bubble up the io::Error  if we failed to bind the address
     // Otherwise call .await on the Server
-    zero2prod::run(listener)?.await
+    zero2prod::startup::run(listener)?.await
 }
