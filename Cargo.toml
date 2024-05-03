@@ -17,13 +17,24 @@ path = "src/lib.rs"
 path = "src/main.rs"
 name = "zero2prod"
 
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 actix-web = "4.5.1"
 serde = { version = "1.0.200", features = ["derive"] }
 tokio = { version = "1.37.0", features = ["macros", "rt-multi-thread"] }
+
+[dependencies.sqlx]
+version = "0.7.4"
+default-features = false
+features = [
+    "runtime-tokio-rustls",
+    "macros",
+    "postgres",
+    "uuid",
+    "chrono",
+    "migrate"
+]
 
 # Only used for testing or examples, not included in the final binary
 [dev-dependencies]
