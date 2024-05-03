@@ -1,3 +1,6 @@
+use sqlx::{Connection, PgConnection};
+use zero2prod::configuration::get_configuration;
+
 #[tokio::test]
 async fn health_check_works() -> () {
     // Arrange
@@ -20,6 +23,11 @@ async fn health_check_works() -> () {
 async fn subscribe_returns_a_200_for_valid_form_data() -> () {
     // Arrange
     let app_addr = spawn_app();
+    let configuration = get_configuration().expect("Failed to read configuration file.");
+    let connection_string = configuration.database.connection_string();
+    let mut connection = PgConnection::connect(&connection_string)
+        .await
+        .expect("Failed to connect to postgres.");
     let client = reqwest::Client::new();
 
     // Act
@@ -34,6 +42,14 @@ async fn subscribe_returns_a_200_for_valid_form_data() -> () {
 
     // Asserts
     assert_eq!(200, response.status().as_u16());
+
+    let saved = sqlx::query!("SELECT name, email FROM subscriptions",)
+        .fetch_one(&mut connection)
+        .await
+        .expect("Failed to fetch saved subscription");
+
+    assert_eq!("carlos.cruz@gmail.com", saved.email);
+    assert_eq!("carlos jose", saved.name);
 }
 
 #[tokio::test]
