@@ -23,3 +23,7 @@ name = "zero2prod"
 [dependencies]
 actix-web = "4.5.1"
 tokio = { version = "1.37.0", features = ["macros", "rt-multi-thread"] }
+
+# Only used for testing or examples, not included in the final binary
+[dev-dependencies]
+reqwest = "0.12.4"
