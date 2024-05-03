@@ -1,5 +1,3 @@
-use actix_web::web::UrlEncoded;
-
 #[tokio::test]
 async fn health_check_works() -> () {
     // Arrange
@@ -51,7 +49,7 @@ async fn subscribe_returns_a_400_when_data_is_missing() -> () {
 
     for (invalid_body, error_message) in test_cases {
         let response = client
-            .post(app_addr.clone())
+            .post(format!("{}/subscriptions", app_addr.clone()))
             .header("Content-Type", "application/x-www-form-urlencoded")
             .body(invalid_body)
             .send()
@@ -62,7 +60,7 @@ async fn subscribe_returns_a_400_when_data_is_missing() -> () {
         assert_eq!(
             400,
             response.status().as_u16(),
-            "The API failed with 400 Bad Request when the payload was {}.",
+            "The API did not fail with 400 Bad Request when the payload was {}.",
             error_message
         )
     }
