@@ -21,9 +21,11 @@ name = "zero2prod"
 
 [dependencies]
 actix-web = "4.5.1"
+chrono = { version = "0.4.38", default-features = false, features = ["clock"] }
 config = "0.14.0"
 serde = { version = "1.0.200", features = ["derive"] }
 tokio = { version = "1.37.0", features = ["macros", "rt-multi-thread"] }
+uuid = { version = "1.8.0", features = ["v4"] }
 
 [dependencies.sqlx]
 version = "0.7.4"
