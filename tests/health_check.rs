@@ -88,10 +88,10 @@ async fn spawn_app() -> TestApp {
     let listener =
         std::net::TcpListener::bind(("127.0.0.1", 0)).expect("Failed to bind random port.");
     let port = listener.local_addr().unwrap().port();
-    let config = get_configuration().expect("Failed to get configuration.");
-    let connection_pool = PgPool::connect(&config.database.connection_string())
-        .await
-        .expect("Failed to create connection pool.");
+    let mut config = get_configuration().expect("Failed to get configuration.");
+    let db_name = Uuid::new_v4();
+    config.database.database_name = db_name.to_string();
+    let connection_pool = create_database(&config.database).await;
 
     let server = zero2prod::startup::run(listener, connection_pool.clone())
         .expect("Failed to bind address.");
@@ -101,4 +101,26 @@ async fn spawn_app() -> TestApp {
         addr: format!("http://127.0.0.1:{}", port),
         db_pool: connection_pool,
     }
+}
+async fn create_database(config: &DatabaseSettings) -> PgPool {
+    // Connect to db server.
+    let mut conn = PgConnection::connect(&config.connection_string_without_db())
+        .await
+        .expect("Failed to connect to the database.");
+
+    // Create test db.
+    conn.execute(format!(r#"CREATE DATABASE "{}""#, config.database_name).as_str())
+        .await
+        .expect("Failed to create database.");
+    // println!("db string: {}", conn_string);
+
+    // create db pool & migrate.
+    let conn_pool = PgPool::connect(&config.connection_string())
+        .await
+        .expect("Failed to create database pool.");
+    sqlx::migrate!("./migrations")
+        .run(&conn_pool)
+        .await
+        .expect("Failed to migrate the database.");
+    conn_pool
 }
