@@ -2,7 +2,7 @@ use sqlx::PgPool;
 use zero2prod::configuration::get_configuration;
 
 struct TestApp {
-    pub app_address: String,
+    pub addr: String,
     pub db_pool: PgPool,
 }
 
@@ -14,7 +14,7 @@ async fn health_check_works() -> () {
 
     // Act
     let response = client
-        .get(format!("{}/health_check", app.app_address))
+        .get(format!("{}/health_check", &app.addr))
         .send()
         .await
         .expect("Failed to execute request to health_check.");
@@ -33,7 +33,7 @@ async fn subscribe_returns_a_200_for_valid_form_data() -> () {
     // Act
     let body = "name=carlos%20jose&email=carlos.cruz%40gmail.com";
     let response = client
-        .post(format!("{}/subscriptions", app.app_address))
+        .post(format!("{}/subscriptions", &app.addr))
         .header("Content-Type", "application/x-www-form-urlencoded")
         .body(body)
         .send()
@@ -65,7 +65,7 @@ async fn subscribe_returns_a_400_when_data_is_missing() -> () {
 
     for (invalid_body, error_message) in test_cases {
         let response = client
-            .get(format!("{}/subscriptions", app.app_address))
+            .get(format!("{}/subscriptions", &app.addr))
             .header("Content-Type", "application/x-www-form-urlencoded")
             .body(invalid_body)
             .send()
@@ -98,7 +98,7 @@ async fn spawn_app() -> TestApp {
     let _ = tokio::spawn(server);
 
     TestApp {
-        app_address: format!("http://127.0.0.1:{}", port),
+        addr: format!("http://127.0.0.1:{}", port),
         db_pool: connection_pool,
     }
 }
