@@ -15,11 +15,9 @@ pub async fn subscribe(
 ) -> HttpResponse {
     println!("Subscribe is running!");
     let query = sqlx::query!(
-        //  TODO: Investigate what a r#""# is
-        r#"
-    INSERT INTO subscriptions (id, email, name, subscribed_at)
-    VALUES ($1, $2, $3, $4)
-    "#,
+        //  TODO: Raw string literals ignore special characters and escapes. r#""# (raw string literal) documented on: https://doc.rust-lang.org/reference/tokens.html#raw-string-literals.
+        "INSERT INTO subscriptions (id, email, name, subscribed_at)
+        VALUES ($1, $2, $3, $4)",
         Uuid::new_v4(),
         form.email,
         form.name,
