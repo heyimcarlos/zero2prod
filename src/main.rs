@@ -11,11 +11,9 @@ async fn main() -> Result<(), std::io::Error> {
     // if there's no connection available a new one will be created or wait until one is freed up.
     let connection_pool = PgPool::connect(&configuration.database.connection_string())
         .await
-        .expect("Failed to create a connectin pool.");
-    let listener =
-        std::net::TcpListener::bind(("127.0.0.1", configuration.application_port)).expect(
-            &format!("Failed to bind port {}", configuration.application_port),
-        );
+        .expect("Failed to create connection pool.");
+    let listener = std::net::TcpListener::bind(("127.0.0.1", configuration.application_port))
+        .unwrap_or_else(|_| panic!("Failed to bind port {}", &configuration.application_port));
     // Bubble up the io::Error  if we failed to bind the address
     // Otherwise call .await on the Server
     zero2prod::startup::run(listener, connection_pool)?.await
