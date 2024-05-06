@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use actix_web::{dev::Server, web, App, HttpServer};
 use sqlx::PgPool;
 
