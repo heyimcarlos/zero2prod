@@ -1,5 +1,6 @@
-use sqlx::PgPool;
-use zero2prod::configuration::get_configuration;
+use sqlx::{Connection, Executor, PgConnection, PgPool};
+use uuid::Uuid;
+use zero2prod::configuration::{get_configuration, DatabaseSettings};
 
 struct TestApp {
     pub addr: String,
@@ -102,6 +103,7 @@ async fn spawn_app() -> TestApp {
         db_pool: connection_pool,
     }
 }
+
 async fn create_database(config: &DatabaseSettings) -> PgPool {
     // Connect to db server.
     let mut conn = PgConnection::connect(&config.connection_string_without_db())
