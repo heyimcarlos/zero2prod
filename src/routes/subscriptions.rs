@@ -1,6 +1,7 @@
 use actix_web::{web, HttpResponse};
 use chrono::Utc;
 use sqlx::PgPool;
+use tracing::Instrument;
 use uuid::Uuid;
 
 #[derive(serde::Deserialize)]
@@ -13,18 +14,17 @@ pub async fn subscribe(
     web::Form(form): web::Form<FormData>,
     pool: web::Data<PgPool>,
 ) -> HttpResponse {
-    let request_id = Uuid::new_v4();
     // NOTE: Every interaction with external systems should be **closely** monitored.
-    log::info!(
-        "request_id {} - Adding '{}' '{}' as a new subscriber",
-        request_id,
-        form.email,
-        form.name
+    let request_id = Uuid::new_v4();
+    let request_span = tracing::info_span!(
+            "Adding a new subscriber.",
+            %request_id,
+            subscriber_email = %form.email,
+            subscriber_name = %form.name
     );
-    log::info!(
-        "request_id {} - Saving new subscriber details to the database",
-        request_id
-    );
+    let _request_span_guard = request_span.enter();
+
+    let query_span = tracing::info_span!("Saving new subscriber details to the database.");
     let query = sqlx::query!(
         //  TODO: Raw string literals ignore special characters and escapes. r#""# (raw string literal) documented on: https://doc.rust-lang.org/reference/tokens.html#raw-string-literals.
         "INSERT INTO subscriptions (id, email, name, subscribed_at)
@@ -35,11 +35,13 @@ pub async fn subscribe(
         Utc::now()
     )
     .execute(pool.get_ref())
+    // attach instrumentation
+    .instrument(query_span)
     .await;
 
     match query {
         Ok(_) => {
-            log::info!(
+            tracing::info!(
                 "request_id {} - New subscriber details have been saved",
                 request_id
             );
@@ -49,7 +51,7 @@ pub async fn subscribe(
             // We use std::fmt::Debug ({:?}) to get a raw view of the error, instead of
             // std::fmt::Display ({}) which displays a nicer error message (that could be displayed
             // to the end user)
-            log::error!(
+            tracing::error!(
                 "request_id {} - Failed to execute query: {:?}",
                 request_id,
                 err
