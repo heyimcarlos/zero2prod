@@ -1,6 +1,9 @@
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
-use zero2prod::configuration::{get_configuration, DatabaseSettings};
+use zero2prod::{
+    configuration::{get_configuration, DatabaseSettings},
+    telemetry::{get_subscriber, init_subscriber},
+};
 
 struct TestApp {
     pub addr: String,
@@ -84,14 +87,19 @@ async fn subscribe_returns_a_400_when_data_is_missing() -> () {
 }
 
 async fn spawn_app() -> TestApp {
+    // Initialize tracing
+    let subscriber = get_subscriber("test".into(), "debug".into());
+    init_subscriber(subscriber);
+
     // Port 0 is special-cased at the OS level, when trying to bind port 0
     // a scan will be triggered to find an available port, and the bind to it.
     let listener =
         std::net::TcpListener::bind(("127.0.0.1", 0)).expect("Failed to bind random port.");
     let port = listener.local_addr().unwrap().port();
+    let address = format!("http://127.0.0.1:{}", port);
+
     let mut config = get_configuration().expect("Failed to get configuration.");
-    let db_name = Uuid::new_v4();
-    config.database.database_name = db_name.to_string();
+    config.database.database_name = Uuid::new_v4().to_string();
     let connection_pool = create_database(&config.database).await;
 
     let server = zero2prod::startup::run(listener, connection_pool.clone())
@@ -99,7 +107,7 @@ async fn spawn_app() -> TestApp {
     let _ = tokio::spawn(server);
 
     TestApp {
-        addr: format!("http://127.0.0.1:{}", port),
+        addr: address,
         db_pool: connection_pool,
     }
 }
