@@ -1,3 +1,4 @@
+use once_cell::sync::Lazy;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 use zero2prod::{
@@ -5,6 +6,23 @@ use zero2prod::{
     telemetry::{get_subscriber, init_subscriber},
 };
 
+// Create a static item `TRACING` which is available for the entire duration of the program
+// it has a static lifetime. `once_cell::sync::Lazy` is a value which is initialized on the
+// first access. Ensures that the `tracing` stack is only initialized once.
+static TRACING: once_cell::sync::Lazy<()> = Lazy::new(|| {
+    let subscriber_name = "test".to_string();
+    let default_filter_level = "debug".to_string();
+
+    // Initialize tracing
+    if std::env::var("TEST_LOG").is_ok() {
+        let subscriber = get_subscriber(subscriber_name, default_filter_level, std::io::stdout);
+        init_subscriber(subscriber);
+    } else {
+        // if `TEST_LOG` is not set, send logs to the void.
+        let subscriber = get_subscriber(subscriber_name, default_filter_level, std::io::sink);
+        init_subscriber(subscriber);
+    }
+});
 struct TestApp {
     pub addr: String,
     pub db_pool: PgPool,
@@ -87,9 +105,9 @@ async fn subscribe_returns_a_400_when_data_is_missing() -> () {
 }
 
 async fn spawn_app() -> TestApp {
-    // Initialize tracing
-    let subscriber = get_subscriber("test".into(), "debug".into());
-    init_subscriber(subscriber);
+    // the first time `spawn_app` is invoked, `TRACING` will be executed.
+    // All other invocations will skip execution.
+    Lazy::force(&TRACING);
 
     // Port 0 is special-cased at the OS level, when trying to bind port 0
     // a scan will be triggered to find an available port, and the bind to it.
