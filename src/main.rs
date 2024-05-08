@@ -1,3 +1,4 @@
+use secrecy::ExposeSecret;
 use sqlx::PgPool;
 use zero2prod::{
     configuration::get_configuration,
@@ -16,9 +17,10 @@ async fn main() -> Result<(), std::io::Error> {
     // We use a connection pool, becase it allows for concurrent behavior. A pool contains multiple
     // connections, so when a query is to be executed, sqlx will borrow a connection from the pool,
     // if there's no connection available a new one will be created or wait until one is freed up.
-    let connection_pool = PgPool::connect(&configuration.database.connection_string())
-        .await
-        .expect("Failed to create connection pool.");
+    let connection_pool =
+        PgPool::connect(&configuration.database.connection_string().expose_secret())
+            .await
+            .expect("Failed to create connection pool.");
     let listener = std::net::TcpListener::bind(("127.0.0.1", configuration.application_port))
         .unwrap_or_else(|_| panic!("Failed to bind port {}", &configuration.application_port));
     // Bubble up the io::Error  if we failed to bind the address

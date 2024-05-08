@@ -1,4 +1,5 @@
 use once_cell::sync::Lazy;
+use secrecy::ExposeSecret;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 use zero2prod::{
@@ -23,6 +24,7 @@ static TRACING: once_cell::sync::Lazy<()> = Lazy::new(|| {
         init_subscriber(subscriber);
     }
 });
+
 struct TestApp {
     pub addr: String,
     pub db_pool: PgPool,
@@ -130,9 +132,9 @@ async fn spawn_app() -> TestApp {
     }
 }
 
-async fn create_database(config: &DatabaseSettings) -> PgPool {
+async fn create_database<'a>(config: &'a DatabaseSettings) -> PgPool {
     // Connect to db server.
-    let mut conn = PgConnection::connect(&config.connection_string_without_db())
+    let mut conn = PgConnection::connect(&config.connection_string_without_db().expose_secret())
         .await
         .expect("Failed to connect to the database.");
 
@@ -143,7 +145,7 @@ async fn create_database(config: &DatabaseSettings) -> PgPool {
     // println!("db string: {}", conn_string);
 
     // create db pool & migrate.
-    let conn_pool = PgPool::connect(&config.connection_string())
+    let conn_pool = PgPool::connect(&config.connection_string().expose_secret())
         .await
         .expect("Failed to create database pool.");
     sqlx::migrate!("./migrations")
