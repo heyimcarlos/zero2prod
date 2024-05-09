@@ -31,13 +31,11 @@ where
         .expect("One of the specified fields cannot be skipped");
 
     // `Registry` implements subscriber and provides span storage.
-    let subscriber = Registry::default()
+    Registry::default()
         // `layer::SubscriberExt` trait adding a `with(Layer)` combinator to `Subscriber`s.
         .with(env_filter)
         .with(JsonStorageLayer)
-        .with(formatting_layer);
-
-    subscriber
+        .with(formatting_layer)
 }
 
 pub fn init_subscriber(subscriber: impl Subscriber + Sync + Send) {
