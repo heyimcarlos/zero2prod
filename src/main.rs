@@ -18,7 +18,7 @@ async fn main() -> Result<(), std::io::Error> {
     // connections, so when a query is to be executed, sqlx will borrow a connection from the pool,
     // if there's no connection available a new one will be created or wait until one is freed up.
     let connection_pool =
-        PgPool::connect(&configuration.database.connection_string().expose_secret())
+        PgPool::connect(configuration.database.connection_string().expose_secret())
             .await
             .expect("Failed to create connection pool.");
     let listener = std::net::TcpListener::bind(("127.0.0.1", configuration.application_port))
