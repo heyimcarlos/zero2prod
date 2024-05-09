@@ -21,6 +21,9 @@ ENV SQLX_OFFLINE=true
 # Build the binary with the release profile
 RUN cargo build --release
 
+# Use production env
+ENV APP_ENVIRONMENT=production
+
 # When `docker run` is executed, launch the binary!
 ENTRYPOINT [ "./target/release/zero2prod" ]
 

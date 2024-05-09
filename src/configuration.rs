@@ -3,7 +3,43 @@ use secrecy::{ExposeSecret, Secret};
 #[derive(serde::Deserialize)]
 pub struct Settings {
     pub database: DatabaseSettings,
-    pub application_port: u16,
+    pub app: AppSettings,
+}
+
+#[derive(serde::Deserialize)]
+pub struct AppSettings {
+    pub port: u16,
+    pub host: String,
+}
+
+pub enum Environment {
+    Local,
+    Production,
+}
+
+impl Environment {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Environment::Local => "local",
+            Environment::Production => "production",
+        }
+    }
+}
+
+impl TryFrom<String> for Environment {
+    type Error = String;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        match value.to_lowercase().as_str() {
+            "local" => Ok(Self::Local),
+            "production" => Ok(Self::Production),
+            other => Err(format!(
+                "{} is not a supported environment. \
+                Use either `local` or `production`.",
+                other
+            )),
+        }
+    }
 }
 
 #[derive(serde::Deserialize)]
@@ -40,12 +76,34 @@ impl DatabaseSettings {
 
 // Get Configuration
 pub fn get_configuration() -> Result<Settings, config::ConfigError> {
+    // we have `base` `local` and `production`
+    // base holds the `port` and database settings
+    // `local` and `production` hold different hosts
+    // Introduce an `APP_ENVIRONMENT` env to toggle the hosts
+
+    // Get the projects root path
+    let base_path = std::env::current_dir().expect("Failed to get current directory path");
+
+    // Get the `/configuration` directory path
+    let configuration_directory = base_path.join("configuration");
+
+    // Get the environment
+    let environment: Environment = std::env::var("APP_ENVIRONMENT")
+        .unwrap_or_else(|_| "local".into())
+        .try_into()
+        .expect("Failed to parse `APP_ENVIRONMENT`");
+    let environment_file_name = format!("{}.yaml", environment.as_str());
+
+    // Based on the environment we should load the correct file.
     // Initialize configuration reader
     let settings = config::Config::builder()
-        // Add configuration file from file named `configuration.yaml`
-        .add_source(config::File::new(
-            "configuration.yaml",
-            config::FileFormat::Yaml,
+        // Add base config file from `base.yaml`
+        .add_source(config::File::from(
+            configuration_directory.join("base.yaml"),
+        ))
+        // Add environment config file from `(local or production).yaml`
+        .add_source(config::File::from(
+            configuration_directory.join(environment_file_name),
         ))
         .build()?;
 
