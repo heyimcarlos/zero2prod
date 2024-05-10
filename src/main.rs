@@ -18,11 +18,12 @@ async fn main() -> Result<(), std::io::Error> {
     // connections, so when a query is to be executed, sqlx will borrow a connection from the pool,
     // if there's no connection available a new one will be created or wait until one is freed up.
     let connection_pool =
-        PgPool::connect(&configuration.database.connection_string().expose_secret())
-            .await
+    // switch to `connect_lazy` because it will try to establish a connection only when the pool is
+    // used for the first time.
+        PgPool::connect_lazy(configuration.database.connection_string().expose_secret())
             .expect("Failed to create connection pool.");
-    let listener = std::net::TcpListener::bind(("127.0.0.1", configuration.application_port))
-        .unwrap_or_else(|_| panic!("Failed to bind port {}", &configuration.application_port));
+    let listener = std::net::TcpListener::bind((configuration.app.host, configuration.app.port))
+        .unwrap_or_else(|_| panic!("Failed to bind port {}", &configuration.app.port));
     // Bubble up the io::Error  if we failed to bind the address
     // Otherwise call .await on the Server
     zero2prod::startup::run(listener, connection_pool)?.await?;
