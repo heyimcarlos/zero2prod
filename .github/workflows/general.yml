@@ -2,10 +2,10 @@ name: Rust
 
 on: 
   push:
-    branches: [ "main" ]
+    branches: [ "chapter-03", "chapter-04", "chapter-05", "main" ]
   pull_request:
     types: [ opened, synchronize, reopened ]
-    branches: [ "main" ]
+    branches: [ "chapter-03", "chapter-04", "chapter-05", "main" ]
 
 env:
   CARGO_TERM_COLOR: always
