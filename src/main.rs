@@ -1,5 +1,4 @@
-use secrecy::ExposeSecret;
-use sqlx::PgPool;
+use sqlx::postgres::PgPoolOptions;
 use zero2prod::{
     configuration::get_configuration,
     telemetry::{get_subscriber, init_subscriber},
@@ -20,8 +19,7 @@ async fn main() -> Result<(), std::io::Error> {
     let connection_pool =
     // switch to `connect_lazy` because it will try to establish a connection only when the pool is
     // used for the first time.
-        PgPool::connect_lazy(configuration.database.connection_string().expose_secret())
-            .expect("Failed to create connection pool.");
+        PgPoolOptions::new().connect_lazy_with(configuration.database.with_db());
     let listener = std::net::TcpListener::bind((configuration.app.host, configuration.app.port))
         .unwrap_or_else(|_| panic!("Failed to bind port {}", &configuration.app.port));
     // Bubble up the io::Error  if we failed to bind the address
