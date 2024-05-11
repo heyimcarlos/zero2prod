@@ -26,14 +26,17 @@ pub async fn subscribe(form: web::Form<FormData>, pool: web::Data<PgPool>) -> Ht
 
 // attach instrumentation
 #[tracing::instrument(name = "Saving new subscriber details to the database", skip_all)]
-async fn insert_subscriber<'a>(form: &'a FormData, pool: &'a PgPool) -> Result<(), sqlx::Error> {
+async fn insert_subscriber<'a>(
+    new_subscriber: &'a NewSubscriber,
+    pool: &'a PgPool,
+) -> Result<(), sqlx::Error> {
     sqlx::query!(
         //  TODO: Raw string literals ignore special characters and escapes. r#""# (raw string literal) documented on: https://doc.rust-lang.org/reference/tokens.html#raw-string-literals.
         "INSERT INTO subscriptions (id, email, name, subscribed_at)
         VALUES ($1, $2, $3, $4)",
         Uuid::new_v4(),
-        form.email,
-        form.name,
+        new_subscriber.email.as_ref(),
+        new_subscriber.name.as_ref(),
         Utc::now()
     )
     .execute(pool)
