@@ -1,6 +1,7 @@
 use sqlx::postgres::PgPoolOptions;
 use zero2prod::{
     configuration::get_configuration,
+    email_client::EmailClient,
     telemetry::{get_subscriber, init_subscriber},
 };
 
@@ -22,8 +23,15 @@ async fn main() -> Result<(), std::io::Error> {
         PgPoolOptions::new().connect_lazy_with(configuration.database.with_db());
     let listener = std::net::TcpListener::bind((configuration.app.host, configuration.app.port))
         .unwrap_or_else(|_| panic!("Failed to bind port {}", &configuration.app.port));
+
+    let sender_email = configuration
+        .email_client
+        .sender()
+        .expect("Failed to parse sender email");
+    let email_client = EmailClient::new(configuration.email_client.base_url, sender_email);
+
     // Bubble up the io::Error  if we failed to bind the address
     // Otherwise call .await on the Server
-    zero2prod::startup::run(listener, connection_pool)?.await?;
+    zero2prod::startup::run(listener, connection_pool, email_client)?.await?;
     Ok(())
 }
