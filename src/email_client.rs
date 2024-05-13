@@ -3,9 +3,9 @@ use reqwest::Client;
 use crate::domain::SubscriberEmail;
 
 pub struct EmailClient {
-    client: Client,
-    base_url: String,
-    sender: SubscriberEmail,
+    pub client: Client,
+    pub base_url: String,
+    pub sender: SubscriberEmail,
 }
 
 impl EmailClient {
@@ -27,4 +27,3 @@ impl EmailClient {
         todo!()
     }
 }
-
