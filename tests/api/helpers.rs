@@ -3,7 +3,6 @@ use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 use zero2prod::{
     configuration::{get_configuration, DatabaseSettings},
-    email_client::EmailClient,
     startup::{get_connection_pool, Application},
     telemetry::{get_subscriber, init_subscriber},
 };
