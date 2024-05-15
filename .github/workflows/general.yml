@@ -5,7 +5,7 @@ on:
     branches: [ "chapter-03", "chapter-04", "chapter-05", "chapter-06", "chapter-07", "main" ]
   pull_request:
     types: [ opened, synchronize, reopened ]
-    branches: [ "chapter-03", "chapter-04", "chapter-05", "main" ]
+    branches: [ "main" ]
 
 env:
   CARGO_TERM_COLOR: always
