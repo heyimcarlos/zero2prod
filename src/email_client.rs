@@ -1,4 +1,3 @@
-// use actix_web::http::header::{HeaderMap, HeaderValue};
 use reqwest::Client;
 use secrecy::{ExposeSecret, Secret};
 
@@ -12,9 +11,14 @@ pub struct EmailClient {
 }
 
 impl EmailClient {
-    pub fn new(base_url: String, sender: SubscriberEmail, auth_token: Secret<String>) -> Self {
+    pub fn new(
+        base_url: String,
+        sender: SubscriberEmail,
+        auth_token: Secret<String>,
+        timeout: std::time::Duration,
+    ) -> Self {
         Self {
-            http_client: Client::new(),
+            http_client: Client::builder().timeout(timeout).build().unwrap(),
             base_url,
             sender,
             auth_token,
@@ -46,7 +50,6 @@ impl EmailClient {
             .header("X-Postmark-Server-Token", self.auth_token.expose_secret())
             .json(&request_body)
             .send()
-            .await?;
             .await?
             .error_for_status()?;
         Ok(())
@@ -65,6 +68,8 @@ struct SendEmailRequest<'a> {
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use crate::domain::SubscriberEmail;
     use crate::email_client::EmailClient;
     use claims::{assert_err, assert_ok};
@@ -114,6 +119,7 @@ mod tests {
             base_url,
             email(),
             Secret::new(Faker.fake()),
+            std::time::Duration::from_millis(200),
         )
     }
 
