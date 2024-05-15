@@ -4,6 +4,7 @@ use uuid::Uuid;
 use zero2prod::{
     configuration::{get_configuration, DatabaseSettings},
     email_client::EmailClient,
+    startup::{get_connection_pool, Application},
     telemetry::{get_subscriber, init_subscriber},
 };
 
@@ -35,37 +36,28 @@ pub async fn spawn_app() -> TestApp {
     // All other invocations will skip execution.
     Lazy::force(&TRACING);
 
-    // Port 0 is special-cased at the OS level, when trying to bind port 0
-    // a scan will be triggered to find an available port, and the bind to it.
-    let listener =
-        std::net::TcpListener::bind(("127.0.0.1", 0)).expect("Failed to bind random port.");
-    let port = listener.local_addr().unwrap().port();
-    let address = format!("http://127.0.0.1:{}", port);
+    let config = {
+        let mut c = get_configuration().expect("Failed to parse configuration");
+        c.database.database_name = Uuid::new_v4().to_string();
+        // Port 0 is special-cased at the OS level, when trying to bind port 0
+        // a scan will be triggered to find an available port, and the bind to it.
+        c.app.port = 0;
+        c
+    };
 
-    let mut config = get_configuration().expect("Failed to get configuration.");
-    config.database.database_name = Uuid::new_v4().to_string();
-    let connection_pool = create_database(&config.database).await;
+    // create and migrate db
+    create_database(&config.database).await;
 
-    let sender_email = config
-        .email_client
-        .sender()
-        .expect("Failed to parse sender email");
+    let app = Application::build(config.clone())
+        .await
+        .expect("Failed to build app");
 
-    let timeout = config.email_client.timeout();
-    let email_client = EmailClient::new(
-        config.email_client.base_url,
-        sender_email,
-        config.email_client.auth_token,
-        timeout,
-    );
-
-    let server = zero2prod::startup::run(listener, connection_pool.clone(), email_client)
-        .expect("Failed to bind address.");
-    let _ = tokio::spawn(server);
+    let addr = format!("http://127.0.0.1:{}", app.port());
+    let _ = tokio::spawn(app.run_until_stopped());
 
     TestApp {
-        addr: address,
-        db_pool: connection_pool,
+        db_pool: get_connection_pool(&config.database),
+        addr,
     }
 }
 
