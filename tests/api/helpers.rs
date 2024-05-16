@@ -30,6 +30,18 @@ pub struct TestApp {
     pub db_pool: PgPool,
 }
 
+impl TestApp {
+    pub async fn post_subscriptions(&self, body: String) -> reqwest::Response {
+        reqwest::Client::new()
+            .post(format!("{}/subscriptions", &self.addr))
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .body(body)
+            .send()
+            .await
+            .expect("Failed to execute request to /subscriptions.")
+    }
+}
+
 pub async fn spawn_app() -> TestApp {
     // the first time `spawn_app` is invoked, `TRACING` will be executed.
     // All other invocations will skip execution.
@@ -39,7 +51,7 @@ pub async fn spawn_app() -> TestApp {
         let mut c = get_configuration().expect("Failed to parse configuration");
         c.database.database_name = Uuid::new_v4().to_string();
         // Port 0 is special-cased at the OS level, when trying to bind port 0
-        // a scan will be triggered to find an available port, and the bind to it.
+        // a scan will be triggered to find an available port, and bind to it.
         c.app.port = 0;
         c
     };
