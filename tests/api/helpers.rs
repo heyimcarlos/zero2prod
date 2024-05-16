@@ -1,6 +1,7 @@
 use once_cell::sync::Lazy;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
+use wiremock::MockServer;
 use zero2prod::{
     configuration::{get_configuration, DatabaseSettings},
     startup::{get_connection_pool, Application},
@@ -28,6 +29,7 @@ static TRACING: once_cell::sync::Lazy<()> = Lazy::new(|| {
 pub struct TestApp {
     pub addr: String,
     pub db_pool: PgPool,
+    pub email_server: MockServer,
 }
 
 impl TestApp {
@@ -47,12 +49,17 @@ pub async fn spawn_app() -> TestApp {
     // All other invocations will skip execution.
     Lazy::force(&TRACING);
 
+    // Launch a new mock server to stand in for `postmark`'s' API.
+    let email_server = MockServer::start().await;
+
     let config = {
         let mut c = get_configuration().expect("Failed to parse configuration");
         c.database.database_name = Uuid::new_v4().to_string();
         // Port 0 is special-cased at the OS level, when trying to bind port 0
         // a scan will be triggered to find an available port, and bind to it.
         c.app.port = 0;
+        // use the mock server uri
+        c.email_client.base_url = email_server.uri();
         c
     };
 
@@ -69,6 +76,7 @@ pub async fn spawn_app() -> TestApp {
     TestApp {
         db_pool: get_connection_pool(&config.database),
         addr,
+        email_server,
     }
 }
 
