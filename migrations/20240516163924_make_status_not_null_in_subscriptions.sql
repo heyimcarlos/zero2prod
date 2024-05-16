@@ -1,4 +1,5 @@
 -- Add migration script here
+
 -- Wrap the entire query in a transaction, just in case any part of the query fails
 -- then the parts that succeeded will be rollbacked.
 BEGIN;
