@@ -136,20 +136,7 @@ async fn subscribe_sends_a_confirmation_email_with_a_link() {
     app.post_subscriptions(body.into()).await;
 
     // Assert
-    let received_request = &app.email_server.received_requests().await.unwrap()[0];
-    let body: serde_json::Value =
-        serde_json::from_slice(&received_request.body).expect("Failed to parse body");
-    let get_link = |s: &str| -> String {
-        let finder = LinkFinder::new();
-        let links: Vec<_> = finder
-            .links(s)
-            .filter(|link| *link.kind() == linkify::LinkKind::Url)
-            .collect();
-        assert_eq!(links.len(), 1);
-        links[0].as_str().to_owned()
-    };
-
-    let text_link = get_link(body["TextBody"].as_str().unwrap());
-    let html_link = get_link(body["HtmlBody"].as_str().unwrap());
-    assert_eq!(text_link, html_link);
+    let email_request = &app.email_server.received_requests().await.unwrap()[0];
+    let confirmation_link = app.get_confirmation_links(&email_request);
+    assert_eq!(confirmation_link.html, confirmation_link.plain_text);
 }

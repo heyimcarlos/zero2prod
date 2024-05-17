@@ -37,7 +37,7 @@ impl Application {
 
         // Bubble up the io::Error  if we failed to bind the address
         // Otherwise call .await on the Server
-        let server = run(listener, connection_pool, email_client)?;
+        let server = run(listener, connection_pool, email_client, config.app.base_url)?;
         Ok(Self { port, server })
     }
 
@@ -62,11 +62,15 @@ pub fn get_connection_pool(config: &DatabaseSettings) -> PgPool {
     PgPoolOptions::new().connect_lazy_with(config.with_db())
 }
 
+pub struct AppBaseUrl(pub String);
+
 fn run(
     listener: std::net::TcpListener,
     db_pool: PgPool,
     email_client: EmailClient,
+    base_url: String,
 ) -> Result<Server, std::io::Error> {
+    let base_url = web::Data::new(AppBaseUrl(base_url));
     let db_pool = web::Data::new(db_pool);
     let email_client = web::Data::new(email_client);
     let server = HttpServer::new(move || {
@@ -75,8 +79,10 @@ fn run(
             .wrap(TracingLogger::default())
             .route("/health_check", web::get().to(routes::health_check))
             .route("/subscriptions", web::post().to(routes::subscribe))
+            .route("/subscriptions/confirm", web::get().to(routes::confirm))
             .app_data(db_pool.clone())
             .app_data(email_client.clone())
+            .app_data(base_url.clone())
     })
     .listen(listener)?
     .run();

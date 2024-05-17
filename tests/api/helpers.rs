@@ -30,6 +30,12 @@ pub struct TestApp {
     pub addr: String,
     pub db_pool: PgPool,
     pub email_server: MockServer,
+    pub port: u16,
+}
+
+pub struct ConfirmationLinks {
+    pub html: reqwest::Url,
+    pub plain_text: reqwest::Url,
 }
 
 impl TestApp {
@@ -41,6 +47,30 @@ impl TestApp {
             .send()
             .await
             .expect("Failed to execute request to /subscriptions.")
+    }
+
+    pub fn get_confirmation_links(&self, email_request: &wiremock::Request) -> ConfirmationLinks {
+        let body: serde_json::Value =
+            serde_json::from_slice(&email_request.body).expect("Failed to parse body");
+        let get_link = |s: &str| {
+            let links: Vec<_> = linkify::LinkFinder::new()
+                .links(s)
+                .filter(|link| *link.kind() == linkify::LinkKind::Url)
+                .collect();
+            assert_eq!(links.len(), 1);
+
+            let raw_link = links[0].as_str().to_owned();
+            let mut confirmation_link = reqwest::Url::parse(&raw_link).unwrap();
+            // let raw_confirmation_link = &get_link(&body["TextBody"].as_str().unwrap());
+            assert_eq!(confirmation_link.host_str().unwrap(), "127.0.0.1");
+            // include the port
+            confirmation_link.set_port(Some(self.port)).unwrap();
+            confirmation_link
+        };
+
+        let html = get_link(&body["HtmlBody"].as_str().unwrap());
+        let plain_text = get_link(&body["TextBody"].as_str().unwrap());
+        ConfirmationLinks { html, plain_text }
     }
 }
 
@@ -70,13 +100,14 @@ pub async fn spawn_app() -> TestApp {
         .await
         .expect("Failed to build app");
 
-    let addr = format!("http://127.0.0.1:{}", app.port());
+    let app_port = app.port();
     let _ = tokio::spawn(app.run_until_stopped());
 
     TestApp {
         db_pool: get_connection_pool(&config.database),
-        addr,
+        addr: format!("http://localhost:{}", app_port),
         email_server,
+        port: app_port,
     }
 }
 

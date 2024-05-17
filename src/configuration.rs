@@ -36,6 +36,7 @@ pub struct AppSettings {
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub port: u16,
     pub host: String,
+    pub base_url: String,
 }
 
 pub enum Environment {
@@ -133,7 +134,7 @@ pub fn get_configuration() -> Result<Settings, config::ConfigError> {
             configuration_directory.join(environment_file_name),
         ))
         // Add in settings from env variables (with a prefix of APP and '__' as separator)
-        // E.g. `APP_APPLICATION__PORT=5000` would set `settings.configuration.port` to 5001
+        // E.g. `APP_APPLICATION__PORT=5000` would set `settings.configuration.port` to 5000
         .add_source(
             config::Environment::with_prefix("APP")
                 .prefix_separator("_")
