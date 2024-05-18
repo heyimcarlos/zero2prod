@@ -58,7 +58,7 @@ impl EmailClient {
 
 #[derive(serde::Serialize)]
 #[serde(rename_all = "PascalCase")]
-struct SendEmailRequest<'a> {
+pub struct SendEmailRequest<'a> {
     from: &'a str,
     to: &'a str,
     subject: &'a str,
