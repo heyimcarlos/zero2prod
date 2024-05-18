@@ -59,16 +59,14 @@ impl TestApp {
                 .collect();
             assert_eq!(links.len(), 1);
 
-            let raw_link = links[0].as_str().to_owned();
-            let mut confirmation_link = reqwest::Url::parse(&raw_link).unwrap();
-            // let raw_confirmation_link = &get_link(&body["TextBody"].as_str().unwrap());
+            let raw_link = links[0].as_str();
+            let mut confirmation_link = reqwest::Url::parse(raw_link).unwrap();
             assert_eq!(confirmation_link.host_str().unwrap(), "127.0.0.1");
             // include the port
             confirmation_link.set_port(Some(self.port)).unwrap();
             confirmation_link
         };
-
-        let html = get_link(&body["HtmlBody"].as_str().unwrap());
+        let html = get_link(body["HtmlBody"].as_str().unwrap());
         let plain_text = get_link(&body["TextBody"].as_str().unwrap());
         ConfirmationLinks { html, plain_text }
     }

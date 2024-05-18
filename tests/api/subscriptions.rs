@@ -1,4 +1,3 @@
-use linkify::LinkFinder;
 use wiremock::{
     matchers::{method, path},
     Mock, ResponseTemplate,
@@ -128,7 +127,6 @@ async fn subscribe_sends_a_confirmation_email_with_a_link() {
     Mock::given(path("/email"))
         .and(method("POST"))
         .respond_with(ResponseTemplate::new(200))
-        // .expect(1)
         .mount(&app.email_server)
         .await;
 
