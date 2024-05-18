@@ -1,7 +1,7 @@
 use actix_web::{web, HttpResponse};
 use chrono::Utc;
 use rand::{distributions::Alphanumeric, Rng};
-use sqlx::PgPool;
+use sqlx::{Executor, PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
 use crate::{
@@ -53,11 +53,15 @@ pub async fn subscribe(
         Ok(subscriber) => subscriber,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
-    let Ok(subscriber_id) = insert_subscriber(&new_subscriber, &pool).await else {
+    let mut transaction = match pool.begin().await {
+        Ok(transaction) => transaction,
+        Err(_) => return HttpResponse::InternalServerError().finish(),
+    };
+    let Ok(subscriber_id) = insert_subscriber(&new_subscriber, &mut transaction).await else {
         return HttpResponse::InternalServerError().finish();
     };
     let subscription_token = gen_subscription_token();
-    if store_token(subscriber_id, &subscription_token, &pool)
+    if store_token(subscriber_id, &subscription_token, &mut transaction)
         .await
         .is_err()
     {
@@ -74,6 +78,9 @@ pub async fn subscribe(
     {
         return HttpResponse::InternalServerError().finish();
     };
+    if transaction.commit().await.is_err() {
+        return HttpResponse::InternalServerError().finish();
+    };
     HttpResponse::Ok().finish()
 }
 
@@ -81,10 +88,10 @@ pub async fn subscribe(
 #[tracing::instrument(name = "Saving new subscriber details to the database", skip_all)]
 async fn insert_subscriber<'a>(
     new_subscriber: &'a NewSubscriber,
-    pool: &'a PgPool,
+    transaction: &mut Transaction<'_, Postgres>,
 ) -> Result<Uuid, sqlx::Error> {
     let subscriber_id = Uuid::new_v4();
-    sqlx::query!(
+    let query = sqlx::query!(
         //  TODO: Raw string literals ignore special characters and escapes. r#""# (raw string literal) documented on: https://doc.rust-lang.org/reference/tokens.html#raw-string-literals.
         "INSERT INTO subscriptions (id, email, name, subscribed_at, status)
         VALUES ($1, $2, $3, $4, 'pending_confirmation')",
@@ -92,14 +99,12 @@ async fn insert_subscriber<'a>(
         new_subscriber.email.as_ref(),
         new_subscriber.name.as_ref(),
         Utc::now()
-    )
-    .execute(pool)
-    .await
-    .map_err(|err| {
-        //  NOTE: We use std::fmt::Debug ({:?}) to get a raw view of the error, instead of
-        // std::fmt::Display ({}) which displays a nicer error message (that could be displayed
-        // to the end user)
-        tracing::error!("Failed to execute query: {:?}", err);
+    );
+    transaction.execute(query).await.map_err(|err| {
+        //     //  NOTE: We use std::fmt::Debug ({:?}) to get a raw view of the error, instead of
+        //     // std::fmt::Display ({}) which displays a nicer error message (that could be displayed
+        //     // to the end user)
+        //     tracing::error!("Failed to execute query: {:?}", err);
         err
     })?;
     Ok(subscriber_id)
@@ -109,18 +114,19 @@ async fn insert_subscriber<'a>(
 async fn store_token(
     subscriber_id: Uuid,
     subscription_token: &str,
-    pool: &PgPool,
+    transaction: &mut Transaction<'_, Postgres>,
 ) -> Result<(), sqlx::Error> {
-    sqlx::query!(
+    let query = sqlx::query!(
         "INSERT INTO subscription_tokens (subscriber_id, subscription_token)
         VALUES ($1, $2)",
         subscriber_id,
         subscription_token
-    )
-    .execute(pool)
-    .await
-    .map_err(|err| {
-        tracing::error!("Failed to execute query: {:?}", err);
+    );
+    transaction.execute(query).await.map_err(|err| {
+        //     //  NOTE: We use std::fmt::Debug ({:?}) to get a raw view of the error, instead of
+        //     // std::fmt::Display ({}) which displays a nicer error message (that could be displayed
+        //     // to the end user)
+        //     tracing::error!("Failed to execute query: {:?}", err);
         err
     })?;
     Ok(())
