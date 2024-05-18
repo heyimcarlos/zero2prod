@@ -101,10 +101,10 @@ async fn insert_subscriber<'a>(
         Utc::now()
     );
     transaction.execute(query).await.map_err(|err| {
-        //     //  NOTE: We use std::fmt::Debug ({:?}) to get a raw view of the error, instead of
-        //     // std::fmt::Display ({}) which displays a nicer error message (that could be displayed
-        //     // to the end user)
-        //     tracing::error!("Failed to execute query: {:?}", err);
+        //  NOTE: We use std::fmt::Debug ({:?}) to get a raw view of the error, instead of
+        // std::fmt::Display ({}) which displays a nicer error message (that could be displayed
+        // to the end user)
+        tracing::error!("Failed to execute query: {:?}", err);
         err
     })?;
     Ok(subscriber_id)
@@ -123,10 +123,7 @@ async fn store_token(
         subscription_token
     );
     transaction.execute(query).await.map_err(|err| {
-        //     //  NOTE: We use std::fmt::Debug ({:?}) to get a raw view of the error, instead of
-        //     // std::fmt::Display ({}) which displays a nicer error message (that could be displayed
-        //     // to the end user)
-        //     tracing::error!("Failed to execute query: {:?}", err);
+        tracing::error!("Failed to execute query: {:?}", err);
         err
     })?;
     Ok(())
