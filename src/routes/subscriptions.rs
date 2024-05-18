@@ -57,8 +57,9 @@ pub async fn subscribe(
         Ok(transaction) => transaction,
         Err(_) => return HttpResponse::InternalServerError().finish(),
     };
-    let Ok(subscriber_id) = insert_subscriber(&new_subscriber, &mut transaction).await else {
-        return HttpResponse::InternalServerError().finish();
+    let subscriber_id = match insert_subscriber(&new_subscriber, &mut transaction).await {
+        Ok(id) => id,
+        Err(_) => return HttpResponse::InternalServerError().finish(),
     };
     let subscription_token = gen_subscription_token();
     if store_token(subscriber_id, &subscription_token, &mut transaction)
@@ -67,6 +68,9 @@ pub async fn subscribe(
     {
         return HttpResponse::InternalServerError().finish();
     }
+    if transaction.commit().await.is_err() {
+        return HttpResponse::InternalServerError().finish();
+    };
     if send_confirmation_email(
         &email_client,
         new_subscriber,
@@ -76,9 +80,6 @@ pub async fn subscribe(
     .await
     .is_err()
     {
-        return HttpResponse::InternalServerError().finish();
-    };
-    if transaction.commit().await.is_err() {
         return HttpResponse::InternalServerError().finish();
     };
     HttpResponse::Ok().finish()
