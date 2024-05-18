@@ -85,7 +85,7 @@ pub async fn spawn_app() -> TestApp {
         c.database.database_name = Uuid::new_v4().to_string();
         // Port 0 is special-cased at the OS level, when trying to bind port 0
         // a scan will be triggered to find an available port, and bind to it.
-        c.app.port = 0;
+        c.application.port = 0;
         // use the mock server uri
         c.email_client.base_url = email_server.uri();
         c

@@ -31,13 +31,18 @@ impl Application {
             timeout,
         );
 
-        let address = format!("{}:{}", config.app.host, config.app.port);
+        let address = format!("{}:{}", config.application.host, config.application.port);
         let listener = std::net::TcpListener::bind(address)?;
         let port = listener.local_addr().unwrap().port();
 
         // Bubble up the io::Error  if we failed to bind the address
         // Otherwise call .await on the Server
-        let server = run(listener, connection_pool, email_client, config.app.base_url)?;
+        let server = run(
+            listener,
+            connection_pool,
+            email_client,
+            config.application.base_url,
+        )?;
         Ok(Self { port, server })
     }
 
