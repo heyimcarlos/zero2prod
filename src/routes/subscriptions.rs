@@ -53,12 +53,24 @@ pub async fn subscribe(
         Ok(subscriber) => subscriber,
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
-    if insert_subscriber(&new_subscriber, &pool).await.is_err() {
+    let Ok(subscriber_id) = insert_subscriber(&new_subscriber, &pool).await else {
         return HttpResponse::InternalServerError().finish();
-    }
-    if send_confirmation_email(&email_client, new_subscriber, &base_url.0)
+    };
+    let subscription_token = gen_subscription_token();
+    if store_token(subscriber_id, &subscription_token, &pool)
         .await
         .is_err()
+    {
+        return HttpResponse::InternalServerError().finish();
+    }
+    if send_confirmation_email(
+        &email_client,
+        new_subscriber,
+        &base_url.0,
+        &subscription_token,
+    )
+    .await
+    .is_err()
     {
         return HttpResponse::InternalServerError().finish();
     };
@@ -70,12 +82,13 @@ pub async fn subscribe(
 async fn insert_subscriber<'a>(
     new_subscriber: &'a NewSubscriber,
     pool: &'a PgPool,
-) -> Result<(), sqlx::Error> {
+) -> Result<Uuid, sqlx::Error> {
+    let subscriber_id = Uuid::new_v4();
     sqlx::query!(
         //  TODO: Raw string literals ignore special characters and escapes. r#""# (raw string literal) documented on: https://doc.rust-lang.org/reference/tokens.html#raw-string-literals.
         "INSERT INTO subscriptions (id, email, name, subscribed_at, status)
         VALUES ($1, $2, $3, $4, 'pending_confirmation')",
-        Uuid::new_v4(),
+        subscriber_id,
         new_subscriber.email.as_ref(),
         new_subscriber.name.as_ref(),
         Utc::now()
@@ -89,6 +102,27 @@ async fn insert_subscriber<'a>(
         tracing::error!("Failed to execute query: {:?}", err);
         err
     })?;
+    Ok(subscriber_id)
+}
+
+#[tracing::instrument(name = "Saving new subscription_token to the database", skip_all)]
+async fn store_token(
+    subscriber_id: Uuid,
+    subscription_token: &str,
+    pool: &PgPool,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        "INSERT INTO subscription_tokens (subscriber_id, subscription_token)
+        VALUES ($1, $2)",
+        subscriber_id,
+        subscription_token
+    )
+    .execute(pool)
+    .await
+    .map_err(|err| {
+        tracing::error!("Failed to execute query: {:?}", err);
+        err
+    })?;
     Ok(())
 }
 
@@ -97,10 +131,11 @@ async fn send_confirmation_email<'a>(
     email_client: &'a EmailClient,
     new_subscriber: NewSubscriber,
     base_url: &'a str,
+    subscription_token: &'a str,
 ) -> Result<(), reqwest::Error> {
     let confirmation_link = format!(
-        "{}/subscriptions/confirm?subscription_token=token",
-        base_url
+        "{}/subscriptions/confirm?subscription_token={}",
+        base_url, subscription_token
     );
     let subject = "subject";
     let html_body = format!(
