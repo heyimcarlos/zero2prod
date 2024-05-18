@@ -1,5 +1,6 @@
 use actix_web::{web, HttpResponse};
 use chrono::Utc;
+use rand::{distributions::Alphanumeric, Rng};
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -23,6 +24,15 @@ impl TryFrom<FormData> for NewSubscriber {
         let email = SubscriberEmail::parse(form.email)?;
         Ok(Self { name, email })
     }
+}
+
+// generate a random 25-characters-long case-sensitive subscription token
+fn gen_subscription_token() -> String {
+    let mut rng = rand::thread_rng();
+    std::iter::repeat_with(|| rng.sample(Alphanumeric))
+        .map(char::from)
+        .take(25)
+        .collect()
 }
 
 #[tracing::instrument(
