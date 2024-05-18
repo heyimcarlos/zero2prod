@@ -23,11 +23,12 @@ mod tests {
     use super::SubscriberEmail;
     use claims::assert_err;
     use fake::locales::{self, Data};
+    use quickcheck::Arbitrary;
 
     #[derive(Debug, Clone)]
     struct ValidEmailFixture(pub String);
 
-    impl quickcheck::Arbitrary for ValidEmailFixture {
+    impl Arbitrary for ValidEmailFixture {
         fn arbitrary(g: &mut quickcheck::Gen) -> Self {
             let username = g
                 .choose(locales::EN::NAME_FIRST_NAME)

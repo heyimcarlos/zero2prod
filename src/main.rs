@@ -1,6 +1,6 @@
-use sqlx::postgres::PgPoolOptions;
 use zero2prod::{
     configuration::get_configuration,
+    startup::Application,
     telemetry::{get_subscriber, init_subscriber},
 };
 
@@ -13,17 +13,8 @@ async fn main() -> Result<(), std::io::Error> {
     init_subscriber(subscriber);
 
     let configuration = get_configuration().expect("Failed to read configuration.");
-    // We use a connection pool, becase it allows for concurrent behavior. A pool contains multiple
-    // connections, so when a query is to be executed, sqlx will borrow a connection from the pool,
-    // if there's no connection available a new one will be created or wait until one is freed up.
-    let connection_pool =
-    // switch to `connect_lazy` because it will try to establish a connection only when the pool is
-    // used for the first time.
-        PgPoolOptions::new().connect_lazy_with(configuration.database.with_db());
-    let listener = std::net::TcpListener::bind((configuration.app.host, configuration.app.port))
-        .unwrap_or_else(|_| panic!("Failed to bind port {}", &configuration.app.port));
-    // Bubble up the io::Error  if we failed to bind the address
-    // Otherwise call .await on the Server
-    zero2prod::startup::run(listener, connection_pool)?.await?;
+
+    let server = Application::build(configuration).await?;
+    server.run_until_stopped().await?;
     Ok(())
 }
