@@ -81,7 +81,7 @@ async fn clicking_on_the_confirmation_link_confirms_a_subscriber() {
         .await
         .expect("Failed to read the subscriptions table");
 
-    assert_eq!(saved.name, "carlos");
+    assert_eq!(saved.name, "carlos jose");
     assert_eq!(saved.email, "carlos.cruz@gmail.com");
     assert_eq!(saved.status, "confirmed");
 }
