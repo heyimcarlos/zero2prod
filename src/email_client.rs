@@ -43,12 +43,6 @@ impl EmailClient {
             html_body: html_content,
             text_body: text_content,
         };
-        tracing::info!("URL FOR EMAIL REQUEST: {:?}", url);
-        tracing::info!("REQUEST BODY BEING SENT TO /EMAIL: {:?}", &request_body);
-        tracing::info!(
-            "HEADER: X-Postmark-Server-Token: {}",
-            self.auth_token.expose_secret()
-        );
 
         let _ = self
             .http_client
@@ -62,7 +56,7 @@ impl EmailClient {
     }
 }
 
-#[derive(serde::Serialize, Debug)]
+#[derive(serde::Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct SendEmailRequest<'a> {
     from: &'a str,

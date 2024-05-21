@@ -14,7 +14,7 @@ pub struct Settings {
     pub email_client: EmailClientSettings,
 }
 
-#[derive(serde::Deserialize, Clone, Debug)]
+#[derive(serde::Deserialize, Clone)]
 pub struct EmailClientSettings {
     pub base_url: String,
     pub sender_email: String,
@@ -141,7 +141,6 @@ pub fn get_configuration() -> Result<Settings, config::ConfigError> {
                 .separator("__"),
         )
         .build()?;
-    tracing::info!("SETTINGS LOADED! {:?}", settings);
 
     // Try to convert the configuration file into a `Settings` struct instance
     settings.try_deserialize::<Settings>()

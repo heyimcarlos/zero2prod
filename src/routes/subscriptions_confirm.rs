@@ -2,7 +2,7 @@ use actix_web::{web, HttpResponse};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(serde::Deserialize)]
 pub struct Parameters {
     pub subscription_token: String,
 }

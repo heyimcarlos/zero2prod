@@ -13,10 +13,6 @@ async fn main() -> Result<(), std::io::Error> {
     init_subscriber(subscriber);
 
     let configuration = get_configuration().expect("Failed to read configuration.");
-    tracing::info!(
-        "SETTINGS configuration.email_client! {:?}",
-        configuration.email_client
-    );
 
     let server = Application::build(configuration).await?;
     server.run_until_stopped().await?;
