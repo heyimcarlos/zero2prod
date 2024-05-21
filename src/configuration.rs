@@ -14,7 +14,7 @@ pub struct Settings {
     pub email_client: EmailClientSettings,
 }
 
-#[derive(serde::Deserialize, Clone)]
+#[derive(serde::Deserialize, Clone, Debug)]
 pub struct EmailClientSettings {
     pub base_url: String,
     pub sender_email: String,
