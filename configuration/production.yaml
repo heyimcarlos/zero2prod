@@ -3,5 +3,4 @@ application:
 database:
   require_ssl: true
 email_client:
-  base_url: https://api.postmarkapp.com
-  sender_email: contact@heyimcarlos.dev
+  base_url: "https://api.postmarkapp.com"
