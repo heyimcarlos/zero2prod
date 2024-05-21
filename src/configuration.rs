@@ -141,6 +141,7 @@ pub fn get_configuration() -> Result<Settings, config::ConfigError> {
                 .separator("__"),
         )
         .build()?;
+    tracing::info!("SETTINGS LOADED! {:?}", settings);
 
     // Try to convert the configuration file into a `Settings` struct instance
     settings.try_deserialize::<Settings>()
