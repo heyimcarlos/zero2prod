@@ -32,15 +32,29 @@ type have to be implemented.
 
 When an operation does not produce the desired outcome, we're dealing with an error.
 
+Errors can also be distinguished based on their location:
+
+- Internal (i.e. a function calling another function within our app)
+- At the edge (i.e. an API request we failed to fulfill)
+
+|  | Internal | At the edge |
+| ------------- | -------------- | -------------- |
+| Control Flow | Types, methods, fields |  Status Codes |
+| Reporting | Logs/traces | Response Body |
+
 ### Tips
 
 - Do not log errors when they are bubbled-up.
 
 ### Dealing with Errors in Rust
 
-#### Control Flows
+**Errors serve two main purposes:**
 
-Doing a different action based on a matching system.
+#### Control Flow (i.e. determine what to do next)
+
+- Doing a different action based on a matching system.
+- Is scripted: all information required to make a decision should be
+accessible to a machine.
 
 Using an enumeration like:
 
@@ -77,3 +91,7 @@ match test() {
     }
 }
 ```
+
+#### Reporting (e.g. investigate, after the fact, what went wrong)
+
+Error reporting is primarily consumed by **humans**.

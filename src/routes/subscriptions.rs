@@ -111,6 +111,7 @@ async fn insert_subscriber<'a>(
     Ok(subscriber_id)
 }
 
+// `store_token` is a fallible operation
 #[tracing::instrument(name = "Saving new subscription_token to the database", skip_all)]
 async fn store_token(
     subscriber_id: Uuid,
