@@ -12,6 +12,12 @@ DATABASE_URL=<database_url> sqlx migrate run
 
 ### Trait Objects
 
+- Trait Objects incur a runtime cost (dynamic dispatch).
+
+A trait object is a way to achieve polymorphism in rust. It's essentially a way to
+only know. what trait(s) a `type` implements. Other than the traits the type impl,
+we know nothing about the type.
+
 #### Box
 
 At the cost of an alloc, hides the original error type from our API. We specify what
