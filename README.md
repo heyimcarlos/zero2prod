@@ -30,6 +30,13 @@ type have to be implemented.
 
 ### Errors
 
+#### What makes a good error?
+
+- Provides a simplified (Display) and a extended (Debug) version tuned for
+multiple audiences.
+- Provides the possibility to look at the underlying cause of the error,
+if any (source).
+
 When an operation does not produce the desired outcome, we're dealing with an error.
 
 Errors can also be distinguished based on their location:
