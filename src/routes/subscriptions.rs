@@ -140,11 +140,19 @@ pub async fn subscribe(
     base_url: web::Data<AppBaseUrl>,
 ) -> Result<HttpResponse, SubscribeError> {
     let new_subscriber = form.0.try_into()?;
-    let mut transaction = pool.begin().await?;
-    let subscriber_id = insert_subscriber(&new_subscriber, &mut transaction).await?;
+    let mut transaction = pool
+        .begin()
+        .await
+        .map_err(SubscribeError::TransactionCommitError)?;
+    let subscriber_id = insert_subscriber(&new_subscriber, &mut transaction)
+        .await
+        .map_err(SubscribeError::InsertSubscriberError)?;
     let subscription_token = gen_subscription_token();
     store_token(subscriber_id, &subscription_token, &mut transaction).await?;
-    transaction.commit().await?;
+    transaction
+        .commit()
+        .await
+        .map_err(SubscribeError::TransactionCommitError)?;
     send_confirmation_email(
         &email_client,
         new_subscriber,
