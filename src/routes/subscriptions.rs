@@ -42,6 +42,7 @@ pub enum SubscribeError {
     SendEmailError(reqwest::Error),
 }
 
+//  NOTE: the `?` operator fires `from` for conversion.
 impl From<String> for SubscribeError {
     fn from(value: String) -> Self {
         Self::ValidationError(value)
