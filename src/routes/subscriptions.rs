@@ -44,19 +44,23 @@ pub enum SubscribeError {
     #[error("{0}")]
     ValidationError(String),
     // Separate DB errors into their own enum variants
-    #[error("Failed to acquire a Postgres connection from the pool")]
+    // #[error("Failed to acquire a Postgres connection from the pool")]
     // `source` is used to denote what should be returned as the root case in Error::source
-    PoolError(#[source] sqlx::Error),
-    #[error("Failed to insert a subscriber in the database")]
-    InsertSubscriberError(#[source] sqlx::Error),
-    #[error("Failed to commit SQL transaction to store a new subscriber")]
-    TransactionCommitError(#[source] sqlx::Error),
+    // PoolError(#[source] sqlx::Error),
+    // #[error("Failed to insert a subscriber in the database")]
+    // InsertSubscriberError(#[source] sqlx::Error),
+    // #[error("Failed to commit SQL transaction to store a new subscriber")]
+    // TransactionCommitError(#[source] sqlx::Error),
+    // `transparent` delegates `Display` and `source` impl to the type wrapped by
+    // `UnexpectedError`
+    #[error(transparent)]
     // `from` automatically derives an impl for the `From` trait (e.g. From<StoreTokenError> for
     // SubscribeError) and applies `#[source]`
-    #[error("Failed to store confirmation token for a new subscriber")]
-    StoreTokenError(#[from] StoreTokenError),
-    #[error("Failed to send confirmation token")]
-    SendEmailError(#[from] reqwest::Error),
+    UnexpectedError(#[from] Box<dyn std::error::Error>),
+    // #[error("Failed to store confirmation token for a new subscriber")]
+    // StoreTokenError(#[from] StoreTokenError),
+    // #[error("Failed to send confirmation token")]
+    // SendEmailError(#[from] reqwest::Error),
 }
 
 impl std::fmt::Debug for SubscribeError {
@@ -69,11 +73,7 @@ impl ResponseError for SubscribeError {
     fn status_code(&self) -> actix_web::http::StatusCode {
         match self {
             SubscribeError::ValidationError(_) => StatusCode::BAD_REQUEST,
-            SubscribeError::PoolError(_)
-            | SubscribeError::InsertSubscriberError(_)
-            | SubscribeError::TransactionCommitError(_)
-            | SubscribeError::StoreTokenError(_)
-            | SubscribeError::SendEmailError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            SubscribeError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
@@ -97,23 +97,26 @@ pub async fn subscribe(
     let mut transaction = pool
         .begin()
         .await
-        .map_err(SubscribeError::TransactionCommitError)?;
+        .map_err(|err| SubscribeError::UnexpectedError(Box::new(err)))?;
     let subscriber_id = insert_subscriber(&new_subscriber, &mut transaction)
         .await
-        .map_err(SubscribeError::InsertSubscriberError)?;
+        .map_err(|err| SubscribeError::UnexpectedError(Box::new(err)))?;
     let subscription_token = gen_subscription_token();
-    store_token(subscriber_id, &subscription_token, &mut transaction).await?;
+    store_token(subscriber_id, &subscription_token, &mut transaction)
+        .await
+        .map_err(|err| SubscribeError::UnexpectedError(Box::new(err)))?;
     transaction
         .commit()
         .await
-        .map_err(SubscribeError::TransactionCommitError)?;
+        .map_err(|err| SubscribeError::UnexpectedError(Box::new(err)))?;
     send_confirmation_email(
         &email_client,
         new_subscriber,
         &base_url.0,
         &subscription_token,
     )
-    .await?;
+    .await
+    .map_err(|err| SubscribeError::UnexpectedError(Box::new(err)))?;
     Ok(HttpResponse::Ok().finish())
 }
 
