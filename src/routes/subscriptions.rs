@@ -37,7 +37,7 @@ fn gen_subscription_token() -> String {
 
 #[derive(thiserror::Error)]
 pub enum SubscribeError {
-    // `error()` defines the `Display` representation of the enum variant applied to.
+    // `error()` defines what `Display` is printing.
     // interpolation `"{0}"` works similarly to `self.0`
     //  NOTE: We don't use `source` or `from` here because `String` does not impl the `Error`
     //  trait
@@ -57,13 +57,6 @@ pub enum SubscribeError {
     StoreTokenError(#[from] StoreTokenError),
     #[error("Failed to send confirmation token")]
     SendEmailError(#[from] reqwest::Error),
-}
-
-//  NOTE: the `?` operator fires `from` for conversion.
-impl From<String> for SubscribeError {
-    fn from(value: String) -> Self {
-        Self::ValidationError(value)
-    }
 }
 
 impl std::fmt::Debug for SubscribeError {
@@ -99,7 +92,8 @@ pub async fn subscribe(
     email_client: web::Data<EmailClient>,
     base_url: web::Data<AppBaseUrl>,
 ) -> Result<HttpResponse, SubscribeError> {
-    let new_subscriber = form.0.try_into()?;
+    // manually map the error
+    let new_subscriber = form.0.try_into().map_err(SubscribeError::ValidationError)?;
     let mut transaction = pool
         .begin()
         .await
