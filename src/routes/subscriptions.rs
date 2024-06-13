@@ -129,13 +129,7 @@ async fn insert_subscriber<'a>(
         new_subscriber.name.as_ref(),
         Utc::now()
     );
-    transaction.execute(query).await.map_err(|err| {
-        //  NOTE: We use std::fmt::Debug ({:?}) to get a raw view of the error, instead of
-        // std::fmt::Display ({}) which displays a nicer error message (that could be displayed
-        // to the end user)
-        tracing::error!("Failed to execute query: {:?}", err);
-        err
-    })?;
+    transaction.execute(query).await?;
     Ok(subscriber_id)
 }
 
