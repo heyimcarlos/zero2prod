@@ -33,6 +33,22 @@ impl ResponseError for ConfirmationError {
     }
 }
 
+#[tracing::instrument(name = "Confirm a pending subscriber", skip_all)]
+pub async fn confirm(
+    params: web::Query<Parameters>,
+    pool: web::Data<PgPool>,
+) -> Result<HttpResponse, ConfirmationError> {
+    let subscriber_id = get_subcriber_id_from_token(&pool, &params.subscription_token)
+        .await
+        .context("Failed to retrieve the subscriber id from the token provided")?
+        .ok_or(ConfirmationError::UnknownToken)?;
+    confirm_susbcriber(&pool, subscriber_id)
+        .await
+        .context("Failed to confirm subscriber")?;
+
+    Ok(HttpResponse::Ok().finish())
+}
+
 async fn get_subcriber_id_from_token(
     pool: &PgPool,
     token: &str,
@@ -44,36 +60,16 @@ async fn get_subcriber_id_from_token(
     )
     .fetch_optional(pool)
     .await?;
-
     Ok(result.map(|r| r.id))
 }
 
 #[tracing::instrument(name = "Mark subscriber as confirmed", skip_all)]
-async fn confirm_susbcriber(pool: &PgPool, subscriber_id: &Uuid) -> Result<(), sqlx::Error> {
+async fn confirm_susbcriber(pool: &PgPool, subscriber_id: Uuid) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"UPDATE subscriptions SET status = 'confirmed' WHERE id = $1"#,
         subscriber_id
     )
     .execute(pool)
-    .await
-    .map_err(|err| {
-        tracing::error!("Failed to execute query: {:?}", err);
-        err
-    })?;
+    .await?;
     Ok(())
-}
-
-#[tracing::instrument(name = "Confirm a pending subscriber", skip_all)]
-pub async fn confirm(
-    params: web::Query<Parameters>,
-    pool: web::Data<PgPool>,
-) -> Result<HttpResponse, ConfirmationError> {
-    let subscriber_id = get_subcriber_id_from_token(&pool, &params.subscription_token)
-        .await
-        .context("Failed to get subscriber from token")?;
-    confirm_susbcriber(&pool, &subscriber_id.unwrap())
-        .await
-        .context("Failed to confirm subscriber")?;
-
-    Ok(HttpResponse::Ok().finish())
 }
