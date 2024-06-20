@@ -23,6 +23,27 @@ async fn confirmations_without_token_are_rejected_with_a_400() {
 }
 
 #[tokio::test]
+async fn confirmations_with_unknown_token_are_unauthorized() {
+    // Arrange
+    let app = spawn_app().await;
+    let client = reqwest::Client::new();
+
+    // Act
+    let response = client
+        .get(format!(
+            "{}/subscriptions/confirm?subscription_token=",
+            &app.addr
+        ))
+        .send()
+        .await
+        .expect("Failed to execute request to `/subscriptions/confirm`");
+
+    println!("");
+    // Assert
+    assert_eq!(response.status().as_u16(), 401)
+}
+
+#[tokio::test]
 async fn the_link_returned_by_subscribe_returns_a_200_if_called() {
     // Arrange
     let app = spawn_app().await;
