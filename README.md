@@ -1,10 +1,10 @@
-# Newsletter API
+# Newsletter API (hiii)
 
 ## Notes
 
 - Before migrating the database, the app needs to have `trusted sources` disabled.
 - After deployment to the digital ocean's app platform, migrations have to be applied
-manually with the following command:
+  manually with the following command:
 
 ```bash
 DATABASE_URL=<database_url> sqlx migrate run
@@ -39,9 +39,9 @@ type have to be implemented.
 #### What makes a good error?
 
 - Provides a simplified (Display) and a extended (Debug) version tuned for
-multiple audiences.
+  multiple audiences.
 - Provides the possibility to look at the underlying cause of the error,
-if any (source).
+  if any (source).
 
 When an operation does not produce the desired outcome, we're dealing with an error.
 
@@ -50,10 +50,10 @@ Errors can also be distinguished based on their location:
 - Internal (i.e. a function calling another function within our app)
 - At the edge (i.e. an API request we failed to fulfill)
 
-|  | Internal | At the edge |
-| ------------- | -------------- | -------------- |
-| Control Flow | Types, methods, fields |  Status Codes |
-| Reporting | Logs/traces | Response Body |
+|              | Internal               | At the edge   |
+| ------------ | ---------------------- | ------------- |
+| Control Flow | Types, methods, fields | Status Codes  |
+| Reporting    | Logs/traces            | Response Body |
 
 ### Tips
 
@@ -67,7 +67,7 @@ Errors can also be distinguished based on their location:
 
 - Doing a different action based on a matching system.
 - Is scripted: all information required to make a decision should be
-accessible to a machine.
+  accessible to a machine.
 
 Using an enumeration like:
 
